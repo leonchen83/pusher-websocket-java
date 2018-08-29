@@ -174,6 +174,18 @@ public class Pusher implements Client {
 
         connection.connect();
     }
+    
+    /**
+     * Disconnect to Pusher. Any {@link ConnectionEventListener}s that have
+     * already been registered using the
+     * {@link Connection#bind(ConnectionState, ConnectionEventListener)} method
+     * will receive connection events.
+     *
+     * <p>Calls are ignored (a connection is not attempted) if the {@link Connection#getState()} is not {@link com.pusher.client.connection.ConnectionState#DISCONNECTED}.</p>
+     */
+    public void disconnect() {
+        disconnect(null);
+    }
 
     /**
      * Disconnect from Pusher.
@@ -183,8 +195,24 @@ public class Pusher implements Client {
      * {@link com.pusher.client.connection.ConnectionState#CONNECTED}.
      * </p>
      */
-    public void disconnect() {
+    public void disconnect(final ConnectionEventListener eventListener, ConnectionState... connectionStates) {
         if (connection.getState() == ConnectionState.CONNECTED) {
+            if (eventListener != null) {
+                if (connectionStates.length == 0) {
+                    connectionStates = new ConnectionState[] { ConnectionState.ALL };
+                }
+        
+                for (final ConnectionState state : connectionStates) {
+                    connection.bind(state, eventListener);
+                }
+            }
+            else {
+                if (connectionStates.length > 0) {
+                    throw new IllegalArgumentException(
+                            "Cannot bind to connection states with a null connection event listener");
+                }
+            }
+            
             connection.disconnect();
         }
     }
